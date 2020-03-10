@@ -1,0 +1,362 @@
+\documentclass[10pt]{beamer} %
+%%%BASICS
+\usepackage[utf8]{inputenc}
+\usepackage{csquotes}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{textpos}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.15}
+\usepackage[pages=some]{background}
+\usepackage{minted}   %comentarios
+\usepackage{caption}    % Para personalizar los títulos de floats
+\usepackage{todonotes}  % Para añadir anotaciones de tareas pendientes
+\presetkeys{todonotes}{inline, color=gray!30, size=\footnotesize}{}
+\usepackage{easyReview} % Para añadir anotaciones de edición
+\usepackage{dirtytalk}  % Para entrecomillado
+\usepackage[official]{eurosym}
+\usepackage{pdfpages}
+
+%\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+%\usepackage[inline]{enumitem}
+%\usepackage[inline]{enumitem}  % activar para explicar inline
+
+\definecolor{cripto}{HTML}{A30000}
+
+%%%START THEME SETTINGS
+\usetheme{Rochester}
+\usecolortheme[named=cripto]{structure}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=0.5cm,text margin right=0.5cm}
+%%%END THEME SETTINGS
+
+%\usebackgroundtemplate{\includegraphics[width=.25\textwidth,right]{gui.png}}
+\addtobeamertemplate{headline}{}{%
+\begin{textblock*}{100mm}(.83\textwidth,-1.35cm)
+\includegraphics[height=1.2cm]{gui.png}\vspace{220pt}
+\end{textblock*}}
+
+
+%%%START APA
+\usepackage{babel}
+\selectlanguage{spanish}
+%\usepackage[backend=biber,style=apa]{biblatex}
+
+%%%%%%%%%%%%Titulo y autores%%%%%%%%%%%
+\title[RSA]{Criptografía de clave pública (RSA)}
+\institute[]
+ {
+   GUI\\
+   Grupo Universitario de Informática\\
+   Escuela de Ingeniería Informática, Universidad de Valladolid
+ }
+\author[]{Manuel de Castro Caballero} 
+
+\date[]
+ {}
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+   \begin{multicols}{2}
+     \tableofcontents[currentsection,hideothersubsections]
+   \end{multicols}
+  \end{frame}
+}
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}
+\begin{center}
+    \includegraphics[width=.67\linewidth]{kaiba1.png}
+\end{center}
+\end{frame}
+\begin{frame}
+\begin{center}
+    \includegraphics[width=.67\linewidth]{kaiba2.png}
+\end{center}
+\end{frame}
+\begin{frame}
+\begin{center}4
+    \includegraphics[width=.67\linewidth]{kaiba3.png}
+\end{center}
+\end{frame}
+\begin{frame}
+\begin{center}
+    \includegraphics[width=.67\linewidth]{kaiba4.png}
+\end{center}
+\end{frame}
+\section{Introducción}
+\begin{frame}{Criptografía (según \textsc{WikipediA})}
+\begin{itemize}
+    \item Del griego, ``escritura oculta''.
+    \item Práctica y estudio de técnicas de \textbf{comunicación segura} ante la presencia de terceros (llamados adversarios).
+    \item Consiste en el desarrollo y análisis de protocolos que prevengan a terceros (o al público) de la lectura de mensajes privados.
+\end{itemize}
+\end{frame}
+\begin{frame}{Bases}
+\begin{itemize}
+    \item Matemáticas
+    \item Computación
+    \item Ingeniería eléctrica
+    \item Ingeniería de comunicaciones
+    \item Física
+\end{itemize}
+Todo muy guay :D
+\end{frame}
+\begin{frame}{Aplicaciones}
+\begin{itemize}
+    \item Comercio electrónico
+    \item Criptomonedas
+    \item Contraseñas informáticas
+    \item Comunicaciones militares
+\end{itemize}
+\end{frame}
+\begin{frame}{Diseño de algoritmos}
+La criptografía moderna se basa en ``la dificultad para realizar ciertas tareas (de forma automática)'': \textbf{complejidad computacional}.
+\begin{itemize}
+    \item No conocemos una forma ``eficiente'' de resolver ciertos problemas.
+    \item Consideramos eficientes las resoluciones en ``tiempo polinómico'' (\textbf{problemas P}).
+    \begin{itemize}
+        \item[--] No consideramos eficientes las resoluciones en ``tiempo exponencial'' (\textbf{problemas NP}).
+    \end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}{Factorización de números}
+    % 528491
+    % 137
+    Asumiendo que 72.403.267 es el producto de dos primos $p$ y $q$, ¿cuánto valen $p$ y $q$?
+\end{frame}
+\begin{frame}{Factorización de números: es difícil}
+\[72.403.267 = 137 \cdot 528.491\]\par
+\begin{itemize}
+    \item ``Dado un número compuesto $n$ producto de dos primos (suficientemente grandes), encontrar su factorización en números primos es \textbf{computacionalmente difícil}''.
+    \begin{itemize}
+        \item[--] No sabemos hacerlo eficientemente (en tiempo polinómico).
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Fundamento matemático}
+\begin{frame}{Antes de empezar...}
+    \begin{itemize}
+        \item Siempre que hablemos de \textit{números}, nos referimos a \textit{números enteros}.
+        \item Asumimos que conocemos y dominamos las operaciones básicas con números enteros (suma, resta, multiplicación, división, potenciación y el máximo común divisor).
+        \item En aritmética modular, supondremos que todos las operaciones, resultados, teoremas, etc. se dan ``módulo $n$'', siendo $n$ un entero dado, a no ser que se especifique de otra forma.
+    \end{itemize}
+\end{frame}
+\begin{frame}{Divisibilidad}
+    Decimos que un número $a$ es \textbf{divisible} entre otro $b$ si existe un número $c$ tal que \[a=b\cdot c\]\par
+    Es decir, si el resto de la división entera de $a$ entre $b$ es $0$.
+    \begin{itemize}
+        \item[--] Decimos, entonces, que $b$ es divisor de $a$.
+    \end{itemize}
+\end{frame}
+\begin{frame}{Números primos(?)}
+    Decimos que un número es primo si solo es divisible entre $1$ y sí mismo.
+    \begin{itemize}
+        \item[¿?] ¿El $1$ es un número primo?
+    \end{itemize}
+\end{frame}
+\begin{frame}{Números primos}
+    Un \textbf{número primo} es todo aquel número natural mayor que $1$ que no puede ser formado como el producto de dos números naturales menores.
+    \begin{itemize}
+        \item[--] Decimos que un número es \textbf{compuesto} si no es primo.
+    \end{itemize}
+\end{frame}
+\begin{frame}{Números coprimos}
+    Decimos que dos números $a$ y $b$ son \textbf{coprimos} si \[mcd(a, b) = 1\]
+    Es decir, si solo tienen el $1$ como divisor común.
+\end{frame}
+\begin{frame}{Aritmética modular (sobresimplificación)}
+Sean $a$, $b$, $c$ y $n$ números enteros no negativos.
+\begin{itemize}
+    \item Decimos que \textit{$a$ módulo $b$ es $c$} si $c$ es el resto de la división entera de $a$ entre $b$, y lo escribimos: \[a\mod b = c\] o bien (siguiendo la notación informática): \[a \% b = c\]
+    \item Decimos que \textit{$a$ es congruente con $b$ módulo $n$} si $a\mod n = b\mod n$. Decimos, también, que ambos están en la misma \textit{clase de congruencia} (o \textit{equivalencia}) \textit{módulo n}. Lo escribimos: \[a \equiv b \mod n\]
+    \item Escribimos las clases de congruencia módulo $n$ como $\overline{a}_n$, siendo $a$ el menor entero positivo perteneciente a la clase de congruencia.
+\end{itemize}
+\end{frame}
+\begin{frame}{Propiedades de la aritmética modular}
+\begin{itemize}
+    \item $\overline{a}_n + \overline{b}_n = \overline{(a + b)}_n$
+    \item $\overline{a}_n \cdot \overline{b}_n = \overline{(a \cdot b)}_n$
+\end{itemize}
+Sea $p$ un número primo.
+\begin{itemize}
+    \item \textbf{Pequeño teorema de Fermat:} $a^p \equiv a \mod p$
+    \item Si $a$ no es divisible entre $p$: $a^{p-1} \equiv 1 \mod p$
+    \begin{itemize}
+        \item[--] Esto es, si $a$ y $p$ son \textbf{coprimos}.
+    \end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}{Función $\phi$ de Euler}
+La función $\phi$ de Euler para $n$ cuenta el número de enteros positivos menores que $n$ que son \textbf{coprimos} con $n$.
+\begin{itemize}
+    % \item $\phi(n) = n\cdot \Pi(1-\frac{1}{p_i})$, siendo $p_i$ los distintos factores de $n$.
+    \item $\phi(p) = p-1$
+    \item Es una función \textbf{multiplicativa}: $\phi(a\cdot b) = \phi(a) \cdot \phi(b)$
+    \item \textbf{Generalización del Pequeño teorema de Fermat} (teorema de Euler):\\ Sean $a$ y $n$ dos números coprimos cualesquiera: $a^{\phi(n)}\equiv 1 \mod n$
+\end{itemize}
+\end{frame}
+\begin{frame}{Inverso modular}
+Decimos que un número real $a^{-1}$ es el \textbf{inverso (multiplicativo)} del real $a$ si \[a\cdot a^{-1} = 1\]\par
+En aritmética modular, decimos que un número (entero) $a^{-1}$ es el \textbf{inverso (multiplicativo) modular} de otro $a$ módulo $n$ si \[a\cdot a^{-1} \equiv 1 \mod n\]
+El inverso modular de un número $a$ módulo $n$ se puede hallar utilizando el \underline{\href{https://es.wikipedia.org/wiki/Algoritmo\_de\_Euclides\#Algoritmo\_de\_Euclides\_extendido}{algoritmo de Euclides extendido}} para $mcd(n, a)$.
+\begin{itemize}
+    \item[¿?] ¿Todos los números tienen inverso?
+\end{itemize}
+\end{frame}
+\section{Sistema RSA}
+\begin{frame}{¿Qué es RSA?}
+RSA (por el nombre de sus diseñadores, \textit{Rivest-Shamir-Adleman}) es un sistema criptográfico de \textbf{clave pública}:
+\begin{itemize}
+    \item Los mensajes se encriptan utilizando una \textbf{clave pública} que cualquiera puede conocer
+    \item y solo pueden ser leídos \textit{eficientemente} utilizando una \textbf{clave privada} (secreta).
+\end{itemize}
+Es uno de los sistemas criptográficos más utilizados en la actualidad.
+\end{frame}
+\begin{frame}{Vistazo rápido}
+Sea $M$ el mensaje que se desea cifrar, expresado como un entero.\\
+Sean $n$, $e$ y $d$ números enteros, con $n > M$.
+\begin{itemize}
+    \item $(n, e)$ es la clave pública.
+    \item $(n, d)$ es la clave privada.
+    \item $M^e \mod n$ es el mensaje cifrado.
+    \item $(M^e)^d \mod n = M$
+\end{itemize}
+\end{frame}
+\begin{frame}{Generación de $n$}
+\begin{enumerate}
+    \item Se eligen (preferiblemente al azar) \textbf{dos números primos} distintos suficientemente grandes, $p$ y $q$.
+    \begin{itemize}
+        \item[--] Se puede comprobar si un número es primo eficientemente.
+    \end{itemize}
+    \item Se computa $n = pq$.\\ $n$ será \textbf{el módulo de ambas claves}.
+\end{enumerate}
+\end{frame}
+\begin{frame}{Generación de clave privada: $e$}
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item \footnote{Aunque originalmente el algoritmo se diseñara así, hoy en día se computa $\lambda(n)$, siendo $\lambda$ la función de Carmichael, ya que genera números más pequeños.}Se computa $\phi(n)$.\\ \footnote{$\lambda(n) = mcd(p-1, q-1)$ en este caso.}$\phi(n) = \phi(p\cdot q) = \phi(p) \cdot \phi(q) = (p - 1)\cdot(q - 1)$
+    \item Se elige un entero $e$ tal que $1 < e < \phi(n)$, siendo $e$ y $\phi(n)$ \textbf{coprimos}.
+    \begin{itemize}
+        \item[--] Ya tenemos nuestra clave pública: $(n, e)$.
+    \end{itemize}
+\end{enumerate}
+\end{frame}
+\begin{frame}{Generación de clave privada: $d$}
+\begin{enumerate}
+    \setcounter{enumi}{4}
+    \item $d$ se determina como el \textbf{inverso modular} de $e$ módulo $\phi(n)$.\\ $d \equiv e^{-1} \mod n$
+    \begin{itemize}
+        \item[--] Ya tenemos nuestra clave privada: $(n, d)$.
+    \end{itemize}
+    \item En este punto, $p$, $q$ y $\phi(n)$ pueden ser descartados, ya que no se van a volver a utilizar.
+\end{enumerate}
+\end{frame}
+\begin{frame}{Ejemplo de uso}
+    \begin{enumerate}
+        \item \textit{Bob} le quiere enviar a \textit{Alice} un mensaje $M$ que solo ella pueda leer.
+        \item \textit{Bob} utiliza la clave pública de \textit{Alice}, $(n, e)$, para cifrar el mensaje: \[C = M^e \mod n\]
+        \item \textit{Alice} recibe $C$, el cual no puede entender.
+        \item \textit{Alice} utiliza su clave pirvada, $(n, d)$, para descifrar el mensaje: \[M = C^d \mod n\]
+        \begin{itemize}
+            \item[--] Solo \textit{Alice} puede descifrar este mensaje de forma eficiente, ya que solo ella conoce $d$.
+        \end{itemize}
+        \item Si \textit{Alice} quiere enviarle una respuesta a \textit{Bob} que solo él pueda leer, deberá utilizar la clave pública de \textit{Bob}, $(n', e')$.
+    \end{enumerate}
+\end{frame}
+\begin{frame}{¿Por qué funciona esto?}
+Aproximación intuitiva (ni yo sé cómo demostrarlo formalmente, ni quiero fundirle la cabeza a nadie):
+    \begin{itemize}
+        \item Recordemos el \textbf{teorema de Euler}: \[a^{\phi(n)} \equiv 1 \mod n \text{ (si $a$ y $n$ son coprimos)}\] de lo que podemos deducir de forma trivial \[a^{\phi(n) + 1} \equiv a \mod n\]
+        \item Si $e$ y $d$ son inversos modulares módulo $\phi(n)$, \[e \cdot d \equiv 1 \mod \phi(n)\] ¿no significa esto que \[e \cdot d \equiv \phi(n) + 1 \mod \phi(n)?\]
+    \end{itemize}
+\end{frame}
+\begin{frame}{Conjetura fuerte de RSA}
+    Ya sabemos que, conocida la clave pública $(n, e)$ y el texto cifrado $C$, es inviable hallar $d$ y, por lo tanto, $M$.\\
+    La \textbf{conjetura fuerte de RSA} afirma que, incluso si el \textit{adversario} fuese quien eligiera $e$, seguiría siendo inviable.
+    \begin{itemize}
+        \item[] ``Dado un número $n$ (lo suficientemente grande) de factorización desconocida y un texto cifrado $C$, es inviable encontrar cualquier par $(M, e)$ tal que $C \equiv M^e \mod n$.''
+    \end{itemize}
+    (Obviamente, la cojetura se cumple bajo ciertas suposiciones de \textbf{aleatoriedad/arbitrariedad}. Existen casos particulares más susceptibles a ataques.)
+\end{frame}
+\begin{frame}{¿Consideraciones sobre la seguridad de RSA?}
+\begin{itemize}
+    \item[--] ¿Encontráis algún problema a RSA?
+\end{itemize}
+\end{frame}
+\section{Ejemplos}
+\begin{frame}{Ejercicio 1}
+    \begin{itemize}
+        \item Le envías a \textit{Bolu}, cuya clave privada es (71.874.640, 1.337), el siguiente mensaje cifrado:\\
+        66.306.264,
+        1.902.097,
+        33.112.087,
+        53.009.343,
+        15.574.171,
+        33.740.959,
+        33.112.087,
+        52.203.380,
+        33.740.959,
+        22.599.955,
+        33.277.386\\
+        ¿Qué mensaje quieres enviarle, suponiendo que el mensaje original está compuesto por caracteres codificados en \href{http://www.asciitable.com/}{\underline{ASCII}}?
+    \end{itemize}
+\end{frame}
+\begin{frame}{Ejercicio 2}
+    \begin{itemize}
+        \item \textit{Bolu}, persona de pocas luces, se está comunicando de forma \textit{in}segura con \textit{Uti}, y tienes serias sospechas de que se están metiendo contigo. \textit{Bolu} ha encriptado su mensaje utilizando la clave pública de \textit{Uti}, $(391, 15)$.
+        \begin{itemize}
+            \item[a)] Desencriptar el mensaje que has captado de \textit{Bolu}, interpretando los resultados como caracteres \href{http://www.asciitable.com/}{\underline{ASCII}}: \\
+            132, 180, 132, 144, 228, 144, 300, 342, 372, 300, 342
+            \item[b)] Quieres darle su merecido a \textit{Bolu}, haciéndo que envie a \textit{Uti} el mensaje ``me como los mocos''. ¿Qué mensaje (secuencia de enteros) tendrías que enviar?
+            \item[]
+            \item[--] Enlaces de interés:
+            \begin{itemize}
+                \item[x] \href{http://www.alcula.com/calculators/math/gcd/}{\underline{Máximo común divisor}}
+                \item[x] \href{https://planetcalc.com/3311/}{\underline{Inverso modular}}
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+\begin{frame}{Ejercicios}
+    Utilizando la \href{https://github.com/0xb01u/GUI-RSA/blob/master/transparencias/src/ListaPrimos.pdf}{\underline{lista de primos adjunta}}, desarrollar un par clave pública-privada RSA. Después, con los compañeros, encriptar, enviar y desencriptar mensajes.
+    \begin{itemize}
+        \item[--] Para simplificar, enviar caracteres \textsc{ascii} uno a uno.
+        \begin{itemize}
+            \item[] Normalmente se agruparían en grupos de caracteres. 
+        \end{itemize}
+        \item[--] Por motivos obvios, es mejor enviar mensajes cortos (como vuestro nombre de usuario del aula virtual de la escuela).
+    \end{itemize}
+\end{frame}
+\section{Para finalizar}
+\begin{frame}{Agradecimientos}
+\begin{itemize}
+    \item Al \textbf{Grupo Universitario de Informática}, especialmente a \textbf{@HylianPablo}, por su inestimable ayuda y por proporcionar el material necesario para realizar el taller.
+    \begin{itemize}
+        \item[--] Seguidnos en Redes Sociales:
+        \begin{itemize}
+            \item[] Twitter: \href{https://twitter.com/GUI\_UVa}{\underline{@GUI\_UVa}}
+            \item[] Instagram: \href{https://www.instagram.com/gui_uva/}{\underline{@gui\_uva}}
+        \end{itemize}
+    \end{itemize}
+    \item A \textbf{Manolo} (Manuel Mariano Carnicer Arribas, profesor de matemáticas), por su maravillosa asignatura \href{https://alojamientos.uva.es/guia_docente/uploads/2019/545/46948/1/Documento.pdf}{\underline{Códigos y criptografía}}; que por desgracia solo puede ser cursada por los alumnos de Ingeniería Informática que sigan el itinerario de Computación.
+\end{itemize}
+\end{frame}
+\begin{frame}{Contacto y dudas}
+\begin{itemize}
+    \item \textbf{GitHub}: \href{https://github.com/0xb01u}{\underline{0xb01u}}
+    \item \textbf{Telegram}: @bomilk
+    \item \textbf{Presencial}: sede del GUI. Si no estoy, preguntad por Bolu.
+\end{itemize}
+\end{frame}
+
+\end{document}
